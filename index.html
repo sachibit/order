@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>出荷依頼</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FBF8F3;
+  --surface: #FFFFFF;
+  --surface2: #F5F0E8;
+  --border: #EAE0D0;
+  --text: #1C1410;
+  --sub: #B09070;
+  --accent: #D4611A;
+  --accent-bg: #FEF3EA;
+  --warn: #C06820;
+  --r: 14px;
+  --rs: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Zen Kaku Gothic New', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+.header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 52px 20px 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.eyebrow { font-size: 9px; letter-spacing: 0.22em; color: var(--sub); font-weight: 400; margin-bottom: 3px; }
+.h-top { display: flex; align-items: center; justify-content: space-between; }
+.h-title { font-size: 22px; font-weight: 500; letter-spacing: 0.01em; }
+.badge { background: var(--accent); color: #FBF8F3; font-size: 12px; font-weight: 500; border-radius: 20px; padding: 4px 12px; }
+.btn-back { background: none; border: none; color: var(--accent); font-size: 14px; font-family: 'Zen Kaku Gothic New', sans-serif; cursor: pointer; padding: 2px 0; }
+
+.loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 14px; color: var(--sub); font-size: 12px; letter-spacing: 0.1em; }
+.spinner { width: 26px; height: 26px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-wrap { display: none; margin: 20px; background: #FDF0EF; border: 1px solid #F5C6C2; border-radius: var(--rs); padding: 16px; color: #C0392B; font-size: 13px; line-height: 1.6; }
+
+.empty-wrap { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 10px; text-align: center; }
+.empty-icon { font-size: 32px; opacity: 0.25; }
+.empty-text { font-size: 14px; color: var(--sub); }
+
+.list-wrap { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.order-card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); padding: 16px 18px; cursor: pointer; transition: transform 0.12s; animation: fadeUp 0.25s ease both; }
+.order-card:active { transform: scale(0.98); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.card-top { display: flex; justify-content: space-between; margin-bottom: 9px; }
+.onum { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--sub); letter-spacing: 0.04em; }
+.odate { font-size: 10px; color: var(--sub); }
+.oname { font-size: 17px; font-weight: 500; margin-bottom: 3px; }
+.oprod { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--sub); }
+.card-bottom { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.oremarks { font-size: 11px; color: var(--warn); flex: 1; }
+.chevron { color: #D4C4B0; font-size: 18px; }
+
+.detail-content { padding: 16px; padding-bottom: 100px; }
+.sec-label { font-size: 9px; letter-spacing: 0.22em; color: var(--sub); font-weight: 400; margin-bottom: 10px; }
+
+.addr-box { border-radius: var(--rs); padding: 14px 16px; margin-bottom: 8px; position: relative; }
+.addr-box.del { background: var(--accent-bg); border: 1.5px solid var(--accent); }
+.addr-box.ord { background: var(--surface2); border: 1px solid var(--border); }
+.addr-tag { font-size: 9px; letter-spacing: 0.18em; font-weight: 500; margin-bottom: 6px; }
+.addr-box.del .addr-tag { color: var(--accent); }
+.addr-box.ord .addr-tag { color: var(--sub); }
+.addr-name { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+.addr-box.ord .addr-name { font-size: 13px; color: #6B5C4A; }
+.addr-detail { font-family: 'DM Mono', monospace; font-size: 11px; color: #9A8672; line-height: 1.75; white-space: pre-line; }
+.check { position: absolute; right: 14px; top: 14px; width: 22px; height: 22px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+
+.data-card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; margin-top: 12px; }
+.drow { display: flex; align-items: baseline; padding: 13px 18px; gap: 16px; border-bottom: 1px solid #F0E8D8; }
+.drow:last-child { border-bottom: none; }
+.dkey { font-size: 9px; letter-spacing: 0.14em; color: var(--sub); font-weight: 400; width: 64px; flex-shrink: 0; }
+.dval { font-size: 14px; flex: 1; line-height: 1.5; word-break: break-all; }
+.dval.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: #4A3C2C; }
+.dval.warn { color: var(--warn); font-size: 13px; }
+.dval.muted { color: #C8B99A; font-size: 12px; font-style: italic; }
+.mtags { display: flex; gap: 6px; flex-wrap: wrap; }
+.mtag { background: var(--surface2); border: 1px solid #DDD0BC; border-radius: 4px; padding: 3px 9px; font-family: 'DM Mono', monospace; font-size: 11px; color: #4A3C2C; }
+
+.submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 14px 20px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+.btn-submit { width: 100%; height: 54px; background: var(--accent); color: #FBF8F3; border: none; border-radius: var(--r); font-size: 16px; font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 500; letter-spacing: 0.08em; cursor: pointer; transition: opacity 0.15s; }
+.btn-submit:active { opacity: 0.8; }
+.btn-submit:disabled { opacity: 0.4; }
+
+.success-overlay { display: none; position: fixed; inset: 0; background: rgba(28,20,16,0.35); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+.success-overlay.show { display: flex; }
+.success-card { background: var(--surface); border-radius: 20px; border: 1px solid var(--border); padding: 32px 24px; text-align: center; width: 100%; animation: popIn 0.22s ease; }
+@keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.s-icon { width: 52px; height: 52px; background: var(--accent-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px; color: var(--accent); }
+.s-title { font-size: 17px; font-weight: 500; margin-bottom: 6px; }
+.s-sub { font-size: 12px; color: #9A8672; line-height: 1.7; }
+.btn-next { margin-top: 22px; width: 100%; height: 48px; background: var(--accent); color: #FBF8F3; border: none; border-radius: var(--rs); font-size: 15px; font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 500; cursor: pointer; }
+.btn-next:active { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<!-- 一覧画面 -->
+<div class="screen active" id="screen-list">
+  <div class="header">
+    <div class="eyebrow">RAKUTEN RMS</div>
+    <div class="h-top">
+      <div class="h-title">確認待ち</div>
+      <div class="badge" id="badge">—</div>
+    </div>
+  </div>
+  <div class="loading-wrap" id="list-loading">
+    <div class="spinner"></div>
+    <div>注文を取得中...</div>
+  </div>
+  <div class="error-wrap" id="list-error"></div>
+  <div class="empty-wrap" id="list-empty">
+    <div class="empty-icon">✓</div>
+    <div class="empty-text">確認待ちの注文はありません</div>
+  </div>
+  <div class="list-wrap" id="order-list"></div>
+</div>
+
+<!-- 詳細画面 -->
+<div class="screen" id="screen-detail">
+  <div class="header">
+    <button class="btn-back" onclick="showList()">← 一覧</button>
+  </div>
+  <div class="detail-content">
+    <div class="sec-label">ADDRESS CHECK</div>
+    <div class="addr-box del">
+      <div class="check">✓</div>
+      <div class="addr-tag">配送先（出荷に使用）</div>
+      <div class="addr-name" id="d-name"></div>
+      <div class="addr-detail" id="d-detail"></div>
+    </div>
+    <div class="addr-box ord">
+      <div class="addr-tag">注文者（確認用）</div>
+      <div class="addr-name" id="o-name"></div>
+      <div class="addr-detail" id="o-detail"></div>
+    </div>
+    <div class="data-card">
+      <div class="drow"><div class="dkey">受注番号</div><div class="dval mono" id="d-ordernum"></div></div>
+      <div class="drow"><div class="dkey">売上日</div><div class="dval mono" id="d-date"></div></div>
+      <div class="drow"><div class="dkey">商品コード</div><div class="dval mono" id="d-code"></div></div>
+      <div class="drow"><div class="dkey">明細</div><div class="dval" id="d-meisai"></div></div>
+      <div class="drow"><div class="dkey">数量</div><div class="dval mono" id="d-qty"></div></div>
+      <div class="drow"><div class="dkey">備考</div><div class="dval" id="d-remarks"></div></div>
+    </div>
+  </div>
+  <div class="submit-bar">
+    <button class="btn-submit" id="submit-btn" onclick="submitCurrent()">出荷依頼を送信</button>
+  </div>
+</div>
+
+<!-- 成功オーバーレイ -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-card">
+    <div class="s-icon">✓</div>
+    <div class="s-title">送信しました</div>
+    <div class="s-sub">スプレッドシートに記録し、<br>RMSを注文確認済みに更新しました。</div>
+    <button class="btn-next" onclick="onSuccessNext()">次の注文へ</button>
+  </div>
+</div>
+
+<script>
+let orders = [];
+let currentOrder = null;
+
+window.onload = function() { loadOrders(); };
+
+function loadOrders() {
+  document.getElementById('list-loading').style.display = 'flex';
+  document.getElementById('list-error').style.display = 'none';
+  document.getElementById('list-empty').style.display = 'none';
+  document.getElementById('order-list').innerHTML = '';
+  document.getElementById('badge').textContent = '—';
+
+  google.script.run
+    .withSuccessHandler(onOrdersLoaded)
+    .withFailureHandler(onLoadError)
+    .fetchPendingOrders();
+}
+
+function onOrdersLoaded(result) {
+  document.getElementById('list-loading').style.display = 'none';
+  if (!result.success) { showListError(result.error); return; }
+  orders = result.orders;
+  document.getElementById('badge').textContent = orders.length;
+  if (orders.length === 0) {
+    document.getElementById('list-empty').style.display = 'flex';
+    return;
+  }
+  renderList(orders);
+}
+
+function onLoadError(err) {
+  document.getElementById('list-loading').style.display = 'none';
+  showListError('通信エラー: ' + err.message);
+}
+
+function showListError(msg) {
+  const el = document.getElementById('list-error');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function renderList(list) {
+  const wrap = document.getElementById('order-list');
+  wrap.innerHTML = '';
+  list.forEach((order, i) => {
+    const c = document.createElement('div');
+    c.className = 'order-card';
+    c.style.animationDelay = (i * 0.04) + 's';
+    c.onclick = () => showDetail(order);
+    c.innerHTML = `
+      <div class="card-top">
+        <div class="onum">${order.orderNumber}</div>
+        <div class="odate">${order.orderDate}</div>
+      </div>
+      <div class="oname">${order.name} 様</div>
+      <div class="oprod">${order.productCode || '商品コードなし'} × ${order.quantity}</div>
+      <div class="card-bottom">
+        <div class="oremarks">${order.remarks || ''}</div>
+        <div class="chevron">›</div>
+      </div>`;
+    wrap.appendChild(c);
+  });
+}
+
+function showDetail(order) {
+  currentOrder = order;
+
+  document.getElementById('d-name').textContent = order.name + ' 様';
+  document.getElementById('d-detail').textContent =
+    '〒' + order.postalCode + '\n' + order.address + '\n' + order.tel;
+  document.getElementById('o-name').textContent = order.ordererName + ' 様';
+  document.getElementById('o-detail').textContent = order.ordererAddress;
+  document.getElementById('d-ordernum').textContent = order.orderNumber;
+  document.getElementById('d-date').textContent = order.orderDate;
+  document.getElementById('d-code').textContent = order.productCode || '—';
+  document.getElementById('d-qty').textContent = order.quantity + ' 点';
+
+  const meisaiEl = document.getElementById('d-meisai');
+  const tags = [order.meisai1, order.meisai2, order.meisai3].filter(Boolean);
+  meisaiEl.innerHTML = tags.length
+    ? '<div class="mtags">' + tags.map(t => `<span class="mtag">${t}</span>`).join('') + '</div>'
+    : '<span class="muted">マスタ未登録</span>';
+
+  const remarksEl = document.getElementById('d-remarks');
+  if (order.remarks) {
+    remarksEl.textContent = order.remarks;
+    remarksEl.className = 'dval warn';
+  } else {
+    remarksEl.textContent = 'なし';
+    remarksEl.className = 'dval muted';
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = false;
+  btn.textContent = '出荷依頼を送信';
+
+  document.getElementById('screen-list').classList.remove('active');
+  document.getElementById('screen-detail').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showList() {
+  document.getElementById('screen-detail').classList.remove('active');
+  document.getElementById('screen-list').classList.add('active');
+}
+
+function submitCurrent() {
+  if (!currentOrder) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  google.script.run
+    .withSuccessHandler(onSubmitSuccess)
+    .withFailureHandler(onSubmitError)
+    .submitOrder(currentOrder);
+}
+
+function onSubmitSuccess(result) {
+  if (!result.success) { onSubmitError({ message: result.error }); return; }
+  orders = orders.filter(o => o.orderNumber !== currentOrder.orderNumber);
+  document.getElementById('success-overlay').classList.add('show');
+}
+
+function onSubmitError(err) {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = false;
+  btn.textContent = '出荷依頼を送信';
+  alert('エラー: ' + err.message);
+}
+
+function onSuccessNext() {
+  document.getElementById('success-overlay').classList.remove('show');
+  currentOrder = null;
+  document.getElementById('badge').textContent = orders.length;
+  if (orders.length === 0) {
+    document.getElementById('order-list').innerHTML = '';
+    document.getElementById('list-empty').style.display = 'flex';
+  } else {
+    renderList(orders);
+  }
+  showList();
+}
+</script>
+</body>
+</html>
