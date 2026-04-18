@@ -230,7 +230,7 @@ const fy  = n=>cn(n)+'円';
 // 売上：現金＋カードは伝票合計、その他は手動
 const salesCash  = ()=>ticketByPay('cash');
 const salesCard  = ()=>ticketByPay('card');
-const salesOther = ()=>+S.other||0;
+const salesOther = ()=>ticketByPay('other')+(+S.other||0);
 const totSales   = ()=>salesCash()+salesCard()+salesOther();
 
 // 金庫
@@ -372,12 +372,13 @@ function tickets(){
 
 function sales(){
   // 現金・カードは伝票から自動、その他のみ手動
-  const cash=salesCash(), card=salesCard(), other=salesOther();
-  const tot=cash+card+other;
+  const cash=salesCash(), card=salesCard();
+  const ticketOther=ticketByPay('other'), manualOther=+S.other||0;
+  const tot=cash+card+ticketOther+manualOther;
   return `
   <div class="stag">売上確認</div>
   <div class="qlabel">売上金額を<br>確認してください</div>
-  <div class="from-ticket-hint">✦ 現金・カードは伝票から自動集計</div>
+  <div class="from-ticket-hint">✦ 現金・カード・その他は伝票から自動集計</div>
   <div class="srow" style="opacity:.75">
     <span class="sicon">💵</span><span class="slabel">現金</span>
     <span class="sinput" style="text-align:right;font-size:17px;font-weight:500;flex:1">${cn(cash)}</span>
@@ -388,8 +389,13 @@ function sales(){
     <span class="sinput" style="text-align:right;font-size:17px;font-weight:500;flex:1">${cn(card)}</span>
     <span class="sunit">円</span>
   </div>
-  <div class="srow">
+  <div class="srow" style="opacity:.75">
     <span class="sicon">📱</span><span class="slabel">その他</span>
+    <span class="sinput" style="text-align:right;font-size:17px;font-weight:500;flex:1">${cn(ticketOther)}</span>
+    <span class="sunit">円</span>
+  </div>
+  <div class="srow">
+    <span class="sicon">➕</span><span class="slabel" style="font-size:11px">その他<br>追加分</span>
     <input class="sinput" type="number" id="iother" placeholder="0" min="0" value="${S.other}" oninput="cSalesOther()">
     <span class="sunit">円</span>
   </div>
@@ -672,7 +678,7 @@ function cSalesOther(){
   const o=+document.getElementById('iother')?.value||0;
   S.other=String(o);
   const el=document.getElementById('stotv');
-  if(el)el.textContent=(salesCash()+salesCard()+o).toLocaleString()+' 円';
+  if(el)el.textContent=(salesCash()+salesCard()+ticketByPay('other')+o).toLocaleString()+' 円';
 }
 
 function cSafe(){
